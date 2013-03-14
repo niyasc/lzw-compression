@@ -1,0 +1,212 @@
+#include<stdio.h>
+#include<stdbool.h>
+#include<string.h>
+struct term
+{
+	char sequence[10];
+	int code;
+}words[100];
+int n=0;
+int getIndexOf(int code)
+{
+	int i;
+	for(i=0;i<n;i++)
+	{
+		if(words[i].code==code)
+			return i;
+	}
+	printf("Something went wrong %d\n",code);
+}
+bool isin(int code)
+{
+	int i;
+	for(i=0;i<n;i++)
+	{
+		if(words[i].code==code)
+			return true;
+	}
+	return false;
+}
+char final[1024];
+/*void uncomp(int list[],int count)
+{
+	int k=list[0];
+	final[0]=0;
+	int code_base=256;
+	//printf("%c",k);
+	char w[10];
+	w[0]=k;
+	w[1]=0;
+	strcat(final,w);
+	int i;
+	for(i=1;i<count;i++)
+	{
+		k=list[i];
+		char entry[10];
+		if(k<256)
+		{
+			entry[0]=k;
+			entry[1]=0;
+		}
+		else
+		{
+			int t=getIndexOf(k);
+			strcpy(entry,words[t].sequence);
+		}
+		//printf("%s",entry);
+		strcat(final,entry);
+		int t=strlen(w);
+		w[t]=entry[0];
+		w[t+1]=0;
+		strcpy(words[n].sequence,w);
+		words[n].code=code_base++;
+		n++;
+		strcpy(w,entry);
+	}
+	printf("%s",final);
+}*/
+void uncomp(int list[],int count)
+{
+/*
+Read OLD_CODE
+output OLD_CODE
+CHARACTER = OLD_CODE
+WHILE there are still input characters DO
+    Read NEW_CODE
+    IF NEW_CODE is not in the translation table THEN
+        STRING = get translation of OLD_CODE
+        STRING = STRING+CHARACTER
+    ELSE
+        STRING = get translation of NEW_CODE
+    END of IF
+    output STRING
+    CHARACTER = first character in STRING
+    add OLD_CODE + CHARACTER to the translation table
+    OLD_CODE = NEW_CODE
+END of WHILE*/
+	int code_base=256;
+	int old_code=list[0],new_code;
+	//printf("%c",old_code);
+	final[0]=old_code;
+	final[1]=0;
+	char c=old_code;
+	int i;
+	for(i=1;i<count;i++)
+	{
+		char string[10];
+		new_code=list[i];
+		if(new_code>256&&!isin(new_code))
+		{
+			if(old_code<256)
+			{
+				string[0]=old_code;
+				string[1]=0;
+			}
+			else
+			{
+				int t=getIndexOf(old_code);
+				strcpy(string,words[t].sequence);
+			}
+			t=strlen(string);
+			string[t]=c;
+			string[t+1]=0;
+		}
+		else
+		{
+			if(new_code<256)
+			{
+				string[0]=new_code;
+				string[1]=0;
+			}
+			else
+			{
+				int t=getIndexOf(new_code);
+				strcpy(string,words[t].sequence);
+			}
+		}
+		strcat(final,string);
+		//printf("%s",string);
+		c=string[0];
+		if(old_code<256)
+		{
+			string[0]=old_code;
+			string[1]=0;
+		}
+		else
+		{
+			int t=getIndexOf(old_code);
+			strcpy(string,words[t].sequence);
+		}
+		int t=strlen(string);
+		string[t]=c;
+		string[t+1]=0;
+		strcpy(words[n].sequence,string);
+		words[n].code=code_base++;
+		n++;
+		old_code=new_code;
+	}
+	printf("%s",final);
+}
+	
+int main(int argc,char *argv[])
+{
+	if(argc!=3)
+	{
+		printf("Syntax: <executable> <input file> <output file>\n");
+		return 1;
+	}
+	unsigned char string[1536];
+	bool ip_bin[12288];
+	FILE *ptr=fopen(argv[1],"r");
+	if(ptr==NULL)
+	{
+		printf("Could not open file\n");
+		return 1;
+	}
+	int i=0,j;
+	while(!feof(ptr))
+	{
+		fscanf(ptr,"%c",&string[i++]);
+		//printf("%c",string[i-1]);
+	}
+	int len=i;
+	//convert input to binary
+	for(i=0;i<len;i++)
+	{
+		//int j;
+		for(j=i*8;j<(i+1)*8;j++)
+			ip_bin[j]=0;
+		int t=string[i];
+		j=(i+1)*8-1;
+		while(t)
+		{
+			ip_bin[j]=t%2;
+			t=t/2;
+			j--;
+		}
+	}
+	int seq[100],seq_count=0;
+	len=len*8;
+	if(len%12!=0)
+		len-=4;
+	for(i=0;i<len/12;i++)
+	{
+		seq[seq_count]=0;
+		for(j=i*12;j<(i+1)*12;j++)
+		{
+			seq[seq_count]=seq[seq_count]*2+ip_bin[j];
+		}
+		seq_count++;
+	}
+	
+	uncomp(seq,seq_count);
+	ptr=fopen(argv[2],"w");
+	for(i=0;final[i]!=0;i++)
+	{
+		fprintf(ptr,"%c",final[i]);
+	}
+	fclose(ptr);			
+		
+		
+	return 0;
+}
